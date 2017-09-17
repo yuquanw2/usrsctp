@@ -324,7 +324,7 @@ struct ip {
 	u_char    ip_ttl;
 	u_char    ip_p;
 	u_short   ip_sum;
-    struct in_addr ip_src, ip_dst;
+	struct in_addr ip_src, ip_dst;
 };
 
 struct ifaddrs {
@@ -345,7 +345,7 @@ struct udphdr {
 };
 
 struct iovec {
-	unsigned long len;
+	size_t len;
 	char *buf;
 };
 
@@ -762,14 +762,6 @@ MALLOC_DECLARE(SCTP_M_SOCKOPT);
 	umem_cache_destroy(zone);
 #endif
 
-/* global struct ifaddrs used in sctp_init_ifns_for_vrf getifaddrs call
- *  but references to fields are needed to persist as the vrf is queried.
- *  getifaddrs allocates memory that needs to be freed with a freeifaddrs
- *  call; this global is used to call freeifaddrs upon in sctp_pcb_finish
- */
-extern struct ifaddrs *g_interfaces;
-
-
 /*
  * __Userspace__ Defining sctp_hashinit_flags() and sctp_hashdestroy() for userland.
  */
@@ -997,11 +989,6 @@ int sctp_userspace_get_mtu_from_ifn(uint32_t if_index, int af);
 #define SCTP_SB_LIMIT_RCV(so) so->so_rcv.sb_hiwat
 #define SCTP_SB_LIMIT_SND(so) so->so_snd.sb_hiwat
 
-/* Future zero copy wakeup/send  function */
-#define SCTP_ZERO_COPY_EVENT(inp, so)
-/* This is re-pulse ourselves for sendbuf */
-#define SCTP_ZERO_COPY_SENDQ_EVENT(inp, so)
-
 #define SCTP_READ_RANDOM(buf, len)	read_random(buf, len)
 
 #define SCTP_SHA1_CTX		struct sctp_sha1_context
@@ -1034,11 +1021,18 @@ int sctp_userspace_get_mtu_from_ifn(uint32_t if_index, int af);
 struct sockaddr_conn {
 #ifdef HAVE_SCONN_LEN
 	uint8_t sconn_len;
-#endif
 	uint8_t sconn_family;
+#else
+	uint16_t sconn_family;
+#endif
 	uint16_t sconn_port;
 	void *sconn_addr;
 };
+
+typedef void *(*start_routine_t)(void *);
+
+extern int
+sctp_userspace_thread_create(userland_thread_t *thread, start_routine_t start_routine);
 
 void
 sctp_userspace_set_threadname(const char *name);
@@ -1160,5 +1154,7 @@ sctp_get_mbuf_for_msg(unsigned int space_needed, int want_header, int how, int a
 	    ((tvp)->tv_usec cmp (uvp)->tv_usec) :			\
 	    ((tvp)->tv_sec cmp (uvp)->tv_sec))
 #endif
+
+#define SCTP_IS_LISTENING(inp) ((inp->sctp_flags & SCTP_PCB_FLAGS_ACCEPTING) != 0)
 
 #endif
