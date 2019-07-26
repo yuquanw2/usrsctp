@@ -100,16 +100,17 @@ typedef struct sctp_callout sctp_os_timer_t;
 #define	SCTP_CALLOUT_ACTIVE	0x0002	/* callout is currently active */
 #define	SCTP_CALLOUT_PENDING	0x0004	/* callout is waiting for timeout */
 
+#define SCTP_CS_DRAIN		0x0001	/* callout drain, wait allowed */
+
 void sctp_os_timer_init(sctp_os_timer_t *tmr);
 void sctp_os_timer_start(sctp_os_timer_t *, int, void (*)(void *), void *);
-int sctp_os_timer_stop(sctp_os_timer_t *);
+int sctp_os_timer_stop(sctp_os_timer_t *, int);
 void sctp_handle_tick(int);
 
 #define SCTP_OS_TIMER_INIT	sctp_os_timer_init
 #define SCTP_OS_TIMER_START	sctp_os_timer_start
-#define SCTP_OS_TIMER_STOP	sctp_os_timer_stop
-/* MT FIXME: Is the following correct? */
-#define SCTP_OS_TIMER_STOP_DRAIN SCTP_OS_TIMER_STOP
+#define SCTP_OS_TIMER_STOP(tmr)	sctp_os_timer_stop((tmr), 0)
+#define SCTP_OS_TIMER_STOP_DRAIN(tmr) sctp_os_timer_stop((tmr), SCTP_CS_DRAIN)
 #define	SCTP_OS_TIMER_PENDING(tmr) ((tmr)->c_flags & SCTP_CALLOUT_PENDING)
 #define	SCTP_OS_TIMER_ACTIVE(tmr) ((tmr)->c_flags & SCTP_CALLOUT_ACTIVE)
 #define	SCTP_OS_TIMER_DEACTIVATE(tmr) ((tmr)->c_flags &= ~SCTP_CALLOUT_ACTIVE)

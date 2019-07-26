@@ -159,7 +159,7 @@ sctp_os_timer_start(sctp_os_timer_t *c, int to_ticks, void (*ftn) (void *),
 }
 
 int
-sctp_os_timer_stop(sctp_os_timer_t *c)
+sctp_os_timer_stop(sctp_os_timer_t *c, int flags)
 {
 	int wakeup_cookie;
 
@@ -169,10 +169,19 @@ sctp_os_timer_stop(sctp_os_timer_t *c)
 	 */
 	if (!(c->c_flags & SCTP_CALLOUT_PENDING)) {
 		c->c_flags &= ~SCTP_CALLOUT_ACTIVE;
+
+		/* is the callout currently being run? */
 		if (sctp_os_timer_current != c) {
 			SCTP_TIMERQ_UNLOCK();
 			return (0);
 		} else {
+			/* the callout is currently running */
+			if (!(flags & SCTP_CS_DRAIN)) {
+				/* if no drain is requested, so just return */
+				SCTP_TIMERQ_UNLOCK();
+				return (0);
+			}
+
 			/*
 			 * Deleting the callout from the currently running
 			 * callout from the same thread, so just return
